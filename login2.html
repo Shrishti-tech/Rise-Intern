@@ -292,6 +292,191 @@ input:focus{ box-shadow:0 6px 18px rgba(37,117,252,0.12); border-color:rgba(37,1
   })();
 </script>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+/* ---------------------------
+        FIREBASE CONFIG
+------------------------------*/
+var firebaseConfig = {
+  apiKey: "AIzaSyAx3ZwxTYmtmvxfqtOp_LzKUpCTE9cjJyE",
+  authDomain: "rise-intern-47cd2.firebaseapp.com",
+  projectId: "rise-intern-47cd2",
+  storageBucket: "rise-intern-47cd2.firebasestorage.app",
+  messagingSenderId: "481360220760",
+  appId: "1:481360220760:web:9667c81d95355b3a76b02d"
+};
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ------------------------------------------------------
+   ADD STYLISH GOOGLE BUTTON UNDER YOUR CURRENT LOGIN FORM
+-------------------------------------------------------*/
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("loginForm");
+
+  const googleBtn = document.createElement("div");
+  googleBtn.innerHTML = `
+    <button id="googleLoginBtn" style="
+      margin-top:15px;
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #d0d0d0;
+      background:#ffffff;
+      color:#444;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-weight:600;
+      font-size:15px;
+      cursor:pointer;
+      transition:0.2s;
+    ">
+      <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width:22px;height:22px;">
+      Continue with Google
+    </button>
+  `;
+  form.appendChild(googleBtn);
+
+  document.getElementById("googleLoginBtn").onmouseover = () => {
+    document.getElementById("googleLoginBtn").style.background = "#f3f6ff";
+  };
+  document.getElementById("googleLoginBtn").onmouseout = () => {
+    document.getElementById("googleLoginBtn").style.background = "#fff";
+  };
+  document.getElementById("googleLoginBtn").onclick = googleLogin;
+});
+
+/* ------------------------------------------------------
+     MODERN GOOGLE LOGIN + ROLE POPUP (OPTION D)
+-------------------------------------------------------*/
+function googleLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+
+  auth.signInWithPopup(provider)
+    .then(async (result) => {
+      const user = result.user;
+      const ref = db.collection("users").doc(user.uid);
+      const doc = await ref.get();
+
+      if (!doc.exists) {
+        openRolePopup(user, ref);
+      } else {
+        redirectUser(doc.data().role);
+      }
+    })
+    .catch(err => alert("Google Login Failed: " + err.message));
+}
+
+/* ------------------------------------------------------
+       ROLE SELECTION — MODERN POPUP
+-------------------------------------------------------*/
+function openRolePopup(user, ref) {
+  const modal = document.createElement("div");
+  modal.id = "roleModal";
+  modal.style = `
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.45);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      background:white;
+      width:330px;
+      padding:25px;
+      border-radius:14px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.25);
+      text-align:center;
+      font-family:Poppins;
+      animation:popIn 0.25s ease;
+    ">
+      <h2 style="margin:0 0 10px;">Choose your Role</h2>
+      <p style="color:#555;font-size:14px;margin-bottom:18px;">
+        Select how you want to continue on RiseIntern
+      </p>
+
+      <button class="roleBtn" data-role="student" style="
+        width:100%;
+        padding:12px;
+        margin-bottom:10px;
+        border-radius:10px;
+        border:0;
+        background:#2575fc;
+        color:white;
+        font-weight:600;
+        cursor:pointer;
+      ">Student</button>
+
+      <button class="roleBtn" data-role="recruiter" style="
+        width:100%;
+        padding:12px;
+        margin-bottom:10px;
+        border-radius:10px;
+        border:0;
+        background:#6a11cb;
+        color:white;
+        font-weight:600;
+        cursor:pointer;
+      ">Recruiter</button>
+
+      <button class="roleBtn" data-role="admin" style="
+        width:100%;
+        padding:12px;
+        border-radius:10px;
+        border:0;
+        background:#ff6ec4;
+        color:white;
+        font-weight:600;
+        cursor:pointer;
+      ">Admin</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Role button actions
+  document.querySelectorAll(".roleBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const selectedRole = btn.getAttribute("data-role");
+
+      try {
+        await ref.set({
+          email: user.email || '',
+          role: selectedRole,
+          createdAt: Date.now()
+        });
+        modal.remove();
+        redirectUser(selectedRole);
+      } catch (err) {
+        console.error('Firestore write failed', err);
+        alert('Failed to save role. Please check Firestore rules and try again.\n' + err.message);
+      }
+    });
+  });
+}
+
+/* ------------------------------------------------------
+               REDIRECT BASED ON ROLE
+-------------------------------------------------------*/
+function redirectUser(role) {
+  if (role === "admin") window.location.href = "admin2.html";
+  else if (role === "recruiter") window.location.href = "recruiter2.html";
+  else window.location.href = "student2.html";
+}
+</script>
 
 </body>
 </html>
